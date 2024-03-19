@@ -107,7 +107,6 @@ def write_to_file_and_backup(content, output_file):
         backup_file = os.path.join(BACKUP_DIRECTORY, "backup_" + file_name)
         write_to_file(content, backup_file)
 
-
 def load_from_file(input_file):
     if not is_file_usable(input_file):
         print(f"File {input_file} is empty or does not exist!")
@@ -119,11 +118,17 @@ def load_from_file(input_file):
 
 def is_file_usable(file):
     full_file_path = os.path.join(BASE_DIRECTORY, file)
-    if not os.path.isfile(full_file_path):
+    if not does_file_exist(file):
         return False
     if os.stat(full_file_path).st_size == 0:
         return False
     return True
+
+def does_file_exist(file):
+    full_file_path = os.path.join(BASE_DIRECTORY, file)
+    if os.path.isfile(full_file_path):
+        return True
+    return False
 
 # UTILITY FUNCTIONS FOR THE EXECUTION
 
@@ -321,6 +326,11 @@ def convert_to_artemis_format(competency):
 
 def s1_convert_excel_to_raw_competencies():
     print("Starting conversion excel -> raw competencies\n=====")
+    if does_file_exist(RAW_COMPETENCIES_FILE):
+        print(f"{RAW_COMPETENCIES_FILE} already exists! If you want to execute this step, please move it")
+        print("=====\nCanceled conversion raw -> clean competencies\n")
+        sys.exit(0)
+
     sheets_as_dataframe_dict = pd.read_excel(os.path.join(BASE_DIRECTORY,EXCEL_INPUT_FILE), sheet_name=None)
     print(f"Loaded {len(sheets_as_dataframe_dict)} sheets: {list(sheets_as_dataframe_dict.keys())}")
     raw_competencies = []
@@ -340,6 +350,11 @@ def s1_convert_excel_to_raw_competencies():
 
 def s2_convert_to_clean_competencies():
     print("Starting conversion raw -> clean competencies\n=====")
+    if does_file_exist(CLEAN_COMPETENCIES_FILE):
+        print(f"{CLEAN_COMPETENCIES_FILE} already exists! If you want to execute this step, please move it")
+        print("=====\nCanceled conversion raw -> clean competencies\n")
+        sys.exit(0)
+
     raw_competencies = load_from_file(RAW_COMPETENCIES_FILE)
     competencies = []
 
@@ -352,6 +367,11 @@ def s2_convert_to_clean_competencies():
 
 def s3_mark_errors():
     print("Starting error marking\n=====")
+    if does_file_exist(CORRECT_COMPETENCIES_FILE) or does_file_exist(ERROR_COMPETENCIES_FILE):
+        print(f"{CORRECT_COMPETENCIES_FILE} and/or {ERROR_COMPETENCIES_FILE} already exist! If you want to execute this step, please move them")
+        print("=====\nCanceled marking errors\n")
+        sys.exit(0)
+
     competencies = load_from_file(CLEAN_COMPETENCIES_FILE)
     print(f"Loaded {len(competencies)} competencies")
 
@@ -367,8 +387,9 @@ def s4_verify_competencies():
     print("Starting verification\n=====")
     if not is_file_usable(ERROR_COMPETENCIES_FILE):
         print(f"Error competencies file {ERROR_COMPETENCIES_FILE} is empty or does not exist!")
-        print("=====\nSkipped verification\n")
+        print("=====\nCanceld verification\n")
         return
+
     old_error_competencies = load_from_file(ERROR_COMPETENCIES_FILE)
     old_correct_competencies = load_from_file(CORRECT_COMPETENCIES_FILE)
     print(f"Loaded {len(old_correct_competencies)} (correct) and {len(old_error_competencies)} (error) competencies")
@@ -392,6 +413,10 @@ def s4_verify_competencies():
 
 def s5_convert_to_artemis():
     print("Starting conversion to Artemis import file\n=====")
+    if does_file_exist(FINAL_COMPETENCIES_FILE):
+        print(f"{FINAL_COMPETENCIES_FILE} already exists! If you want to execute this step, please move it")
+        print("=====\nCanceled conversion to Artemis import file\n")
+        sys.exit(0)
     if is_file_usable(ERROR_COMPETENCIES_FILE):
         error_competencies = load_from_file(ERROR_COMPETENCIES_FILE)
         if error_competencies:
