@@ -1,8 +1,7 @@
 # output files
 *.json
 data/previous_runs/*
-# do not ignore run_info.json or gitkeep files
-!run_info.json
+# do not ignore gitkeep files
 !.gitkeep
 
 # other files
