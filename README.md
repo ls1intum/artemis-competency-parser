@@ -51,8 +51,10 @@ This chapter contains some detailed information on the python parser `competency
     - Solution: change it to one of the allowed values in the `KNOWLEDGE_AREA_MAPPING`
     - Note: this should **not** happen, except for human error. If new knowledge areas are introduced this should be caught by the first step of the python script
 
-### TODO
-TODO: add settings etc. (Especially do_backup)
+### Configuration
+All the configuration is done through global constants at the start of the file. The most relevant are:
+- DO_BACKUPS: If true, backs up created files for each run under *data/previous_runs/{run_number}*
+- KNOWLEDGE_AREA_MAPPING: The mapping from knowledge area abbreviation -> full text
 	
 ### Detailed steps
 The parser consists of the following five steps:
