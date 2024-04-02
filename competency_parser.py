@@ -440,6 +440,8 @@ def s5_convert_to_artemis():
         ka_title = KNOWLEDGE_AREA_MAPPING[ka_key]
         knowledge_area = {
             "title": ka_title,
+            # take at most 10 characters as shortTitle (to confom to Artemis format)
+            "shortTitle": ka_key[0:10],
             "description": "",
             "competencies": []
         }
