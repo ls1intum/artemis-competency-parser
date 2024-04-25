@@ -1,8 +1,12 @@
 # output files
 *.json
 data/previous_runs/*
+
 # do not ignore gitkeep files
 !.gitkeep
+
+# do not ignore the source information
+!source.json
 
 # other files
 .idea
