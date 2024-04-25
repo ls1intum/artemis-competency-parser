@@ -19,6 +19,7 @@ CORRECT_COMPETENCIES_FILE = os.path.join(DATA_DIRECTORY, "3_correct_competencies
 ERROR_COMPETENCIES_FILE = os.path.join(DATA_DIRECTORY, "3_error_competencies.json")
 FINAL_COMPETENCIES_FILE = "competencies_for_import.json"
 RUN_INFO_FILE = "run_info.json"
+SOURCE_FILE = "source.json"
 
 ### EXECUTION CONFIGURATION
 # if the competency data should be backed up for each run under PREVIOUS_RUN_DIRECTORY
@@ -76,6 +77,7 @@ TAXONOMY_MAPPING = {
     "Develop": "CREATE"
 }
 ARTEMIS_TAXONOMIES = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"]
+SOURCE_COLUMN = "sourceId"
 
 # Settings for verification
 ALLOWED_TAXONOMIES = list(TAXONOMY_MAPPING.keys()) + ARTEMIS_TAXONOMIES
@@ -309,7 +311,7 @@ def mark_field_errors(competency):
 
 # STEP 5 FUNCTIONS
 
-def convert_to_artemis_format(competency):
+def convert_to_artemis_format(competency, source_id):
     # copy competency to not change the original
     competency_copy = competency.copy()
     taxonomy = competency_copy[TAXONOMY_COLUMN]
@@ -319,6 +321,9 @@ def convert_to_artemis_format(competency):
 
     # remove knowledge area from competency
     competency_copy.pop(KNOWLEDGE_AREA_COLUMN, None)
+    
+    # add source id
+    competency_copy[SOURCE_COLUMN] = source_id
 
     return competency_copy
 
@@ -430,6 +435,8 @@ def s5_convert_to_artemis():
     else:
         print(f"No error competencies found for file {ERROR_COMPETENCIES_FILE}. Continuing...")
 
+    source = load_from_file(SOURCE_FILE)
+    source_id = source["id"]
     competencies = load_from_file(CORRECT_COMPETENCIES_FILE)
     print(f"Loaded {len(competencies)} competencies from {CORRECT_COMPETENCIES_FILE}")
     num_competencies = 0
@@ -449,14 +456,19 @@ def s5_convert_to_artemis():
             competency_knowledge_area = competency[KNOWLEDGE_AREA_COLUMN]
             # accept either the abbreviation or full knowledge area name
             if competency_knowledge_area == ka_key or competency_knowledge_area == ka_title:
-                competency_artemis_format = convert_to_artemis_format(competency)
+                competency_artemis_format = convert_to_artemis_format(competency, source_id)
                 knowledge_area["competencies"].append(competency_artemis_format)
 
         print(f"Saving knowledge area \"{ka_title}\" with {len(knowledge_area["competencies"])} competencies")
         knowledge_areas.append(knowledge_area)
         num_competencies += len(knowledge_area["competencies"])
+        
+    output_object = {
+        "knowledgeAreas": knowledge_areas,
+        "sources": [source]
+    }
 
-    write_to_file_and_backup(knowledge_areas, FINAL_COMPETENCIES_FILE)
+    write_to_file_and_backup(output_object, FINAL_COMPETENCIES_FILE)
 
     print(f"Saved {len(knowledge_areas)} knowledge areas with {num_competencies} competencies to {FINAL_COMPETENCIES_FILE}")
     print("=====\nFinished conversion to Artemis import file\n")
