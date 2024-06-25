@@ -2,7 +2,8 @@ import pandas as pd
 import argparse
 import json
 import sys
-import os 
+import os
+import re
 
 ### FILE CONFIGURATION
 # get overwritten in main
@@ -20,10 +21,15 @@ ERROR_COMPETENCIES_FILE = os.path.join(DATA_DIRECTORY, "3_error_competencies.jso
 FINAL_COMPETENCIES_FILE = "competencies_for_import.json"
 RUN_INFO_FILE = "run_info.json"
 SOURCE_FILE = "source.json"
+TITLES_FILE = "titles.json"
 
 ### EXECUTION CONFIGURATION
 # if the competency data should be backed up for each run under PREVIOUS_RUN_DIRECTORY
 DO_BACKUPS = True
+# if the titles should be fixed in the CLEAN step
+FIX_TITLES = True
+# if the descriptions should be fixed in the CLEAN step
+FIX_DESCRIPTIONS = True
 
 # mapping knowledge area abbreviations -> full title
 # this is needed as we cannot have the full title for excel worksheets
@@ -78,6 +84,19 @@ TAXONOMY_MAPPING = {
 }
 ARTEMIS_TAXONOMIES = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"]
 SOURCE_COLUMN = "sourceId"
+
+# Regexes for fixing the descriptions
+# checks 1., 11. (at the start of the description and on newlines)
+DIGIT_REGEX = r'\n\s*\d{1,2}\.\s*'
+DIGIT_REGEX_2 = r'^\s*\d{1,2}\.\s*'
+DIGIT_REPLACE = "\\n- "
+DIGIT_REPLACE_2 = "- "
+# checks: a., 1a., 11a.
+LETTER_REGEX = r'\n\s*\d{0,2}[a-z]\.\s*'
+LETTER_REPLACE = "\\n    - "
+# checks: i., 1. i., 1a. i., 1 i., 1a i.
+ROMAN_REGEX = r'\n\s*(\d{0,2}[a-z]{0,1}.{0,1}\s*){0,1}(i|ii|iii|iv|v|vi|vii|viii|ix|x)\.\s*'
+ROMAN_REPLACE = "\\n        - "
 
 # Settings for verification
 ALLOWED_TAXONOMIES = list(TAXONOMY_MAPPING.keys()) + ARTEMIS_TAXONOMIES
@@ -251,6 +270,23 @@ def convert_to_clean(raw_competency):
         clean_competency[mapped_key] = clean_competency[mapped_key].replace(u'\u00a0', u'')
     return clean_competency
 
+def fix_title(competency, titles):
+    regex = competency[TITLE_COLUMN] + ":\\w*(.*)"
+    for title in titles:
+        match = re.search(regex, title)
+        if match != None:
+            competency[TITLE_COLUMN] = match.group(1).strip()
+            break
+
+def fix_description(competency):
+    description = competency[DESCRIPTION_COLUMN]
+    # the order of these regexes is important (at least ROMAN has to occur before DIGIT)
+    description = re.sub(ROMAN_REGEX, ROMAN_REPLACE, description)
+    description = re.sub(LETTER_REGEX, LETTER_REPLACE, description)
+    description = re.sub(DIGIT_REGEX, DIGIT_REPLACE, description)
+    description = re.sub(DIGIT_REGEX_2, DIGIT_REPLACE_2, description)
+    competency[DESCRIPTION_COLUMN] = description
+
 # STEP 3/4 FUNCTIONS
 
 def mark_errors(competencies):
@@ -366,6 +402,15 @@ def s2_convert_to_clean_competencies():
     for competency in raw_competencies:
         clean_competency = convert_to_clean(competency)
         competencies.append(clean_competency)
+    if FIX_TITLES:
+        print("Fixing titles")
+        titles = load_from_file(TITLES_FILE)
+        for competency in competencies:
+            fix_title(competency, titles)
+    if FIX_DESCRIPTIONS:
+        print("Fixing descriptions")
+        for competency in competencies:
+            fix_description(competency)
     write_to_file_and_backup(competencies, CLEAN_COMPETENCIES_FILE)
     print(f"Saved {len(competencies)} (clean) competencies to {CLEAN_COMPETENCIES_FILE}")
     print("=====\nFinished conversion raw -> clean competencies\n")

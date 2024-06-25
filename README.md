@@ -55,6 +55,8 @@ This chapter contains some detailed information on the python parser `competency
 All the configuration is done through global constants at the start of the file. The most relevant are:
 - DO_BACKUPS: If true, backs up created files for each run under *data/previous_runs/{run_number}*
 - KNOWLEDGE_AREA_MAPPING: The mapping from knowledge area abbreviation -> full text
+- FIX_TITLES: If the titles should be fixed (see step 2 below)
+- FIX_DESCRIPTIONS: If the descriptions should be fixed (see step 2 below)
 	
 ### Detailed steps
 The parser consists of the following five steps:
@@ -64,6 +66,8 @@ The parser consists of the following five steps:
 2. Convert to clean competencies
 	- Takes raw competencies as input
 	- Removes all unneeded information from the competencies
+    - (optional) Fixes titles: changes from the shortened one to the full one (e.g, "AI-ML" to "Machine Learning")
+    - (optional) Fixes descriptions: Changes all occurrences of numberings to bullet points that are correctly indented for markdown display
 	- Re-names columns
 3. Mark errors
 	- Takes clean competencies as input
