@@ -5,8 +5,9 @@ data/previous_runs/*
 # do not ignore gitkeep files
 !.gitkeep
 
-# do not ignore the source information
+# do not ignore the source information or title mappings
 !source.json
+!titles.json
 
 # other files
 .idea
